@@ -26,7 +26,7 @@ export class NextWaiting extends SingletonAction<JsonObject> {
 
 	override async onKeyDown(ev: KeyDownEvent<JsonObject>): Promise<void> {
 		const first = hub.online ? hub.waiting[0] : undefined;
-		if (!first || !(await hub.focus(first.paneId))) await ev.action.showAlert();
+		if (!first || !(await hub.focus(first.key))) await ev.action.showAlert();
 	}
 
 	async #renderAll(): Promise<void> {

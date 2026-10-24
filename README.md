@@ -1,6 +1,7 @@
 # Herdr Agents — Stream Deck plugin
 
-Shows which Herdr agent sessions need you, and focuses one on press.
+Shows which Herdr agent sessions and QuickAsk chats need you, and brings one
+forward on press.
 
 - **Agent slot** (key) — the k-th waiting session: state, title, repo. Slots number
   themselves in placement order (row, then column); override in the inspector.
@@ -14,6 +15,12 @@ unseen; toggle with *Count done*), oldest first within each. Focusing marks a do
 session seen, so it drops off; a blocked one stays until answered.
 
 ## How it works
+
+- **QuickAsk**: reads `~/Library/Application Support/QuickAsk/status.json`, written by
+  QuickAsk's `StatusFeed.swift` (watched with `fs.watch` on the folder, 5 s poll behind
+  it; a file whose pid is dead is ignored). `needs-you` ranks with blocked, `answered`
+  with done; press opens `quickask://chat/<id>`. Herdr panes are stamped when the plugin
+  first sees them waiting, so both sources order by how long they have waited.
 
 - Talks to `~/.config/herdr/herdr.sock` directly. State is pushed: `events.subscribe`
   on `pane.agent_detected` / `pane.closed` / `pane.focused` plus a per-pane

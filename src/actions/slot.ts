@@ -9,7 +9,7 @@ type SlotSettings = JsonObject & {
 	slot?: number;
 };
 
-type Instance = { action: KeyAction<SlotSettings>; settings: SlotSettings; image?: string; paneId?: string };
+type Instance = { action: KeyAction<SlotSettings>; settings: SlotSettings; image?: string; key?: string };
 
 /** Shows the k-th session waiting for input; press focuses it. */
 @action({ UUID: "com.cx.herdr.slot" })
@@ -40,8 +40,8 @@ export class AgentSlot extends SingletonAction<SlotSettings> {
 
 	override async onKeyDown(ev: KeyDownEvent<SlotSettings>): Promise<void> {
 		// Focus what this key is showing, not whatever slot k holds by now.
-		const paneId = this.#instances.get(ev.action.id)?.paneId;
-		if (!paneId || !(await hub.focus(paneId))) await ev.action.showAlert();
+		const key = this.#instances.get(ev.action.id)?.key;
+		if (!key || !(await hub.focus(key))) await ev.action.showAlert();
 	}
 
 	/** Slot number per instance: explicit setting, else position among auto slots on that device. */
@@ -75,7 +75,7 @@ export class AgentSlot extends SingletonAction<SlotSettings> {
 			[...this.#instances.values()].map(async (inst) => {
 				const n = numbers.get(inst.action.id) ?? 1;
 				const session = waiting[n - 1];
-				inst.paneId = hub.online ? session?.paneId : undefined;
+				inst.key = hub.online ? session?.key : undefined;
 				const image = slotImage(session, n, hub.online);
 				if (!force && image === inst.image) return;
 				inst.image = image;

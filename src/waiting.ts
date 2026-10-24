@@ -1,6 +1,7 @@
 /**
- * Pure selection logic: which Herdr agents need Chris, in what order.
- * No I/O here so it can be unit-tested without Herdr or the Stream Deck.
+ * Pure selection logic: which sessions need Chris, in what order. Sessions come
+ * from Herdr (agent panes) and QuickAsk (popup chats). No I/O here so it can be
+ * unit-tested without either app or the Stream Deck.
  */
 
 export type AgentStatus = "idle" | "working" | "blocked" | "done" | "unknown";
@@ -18,30 +19,77 @@ export type HerdrAgent = {
 	state_change_seq?: number;
 };
 
-export type WaitingSession = {
-	paneId: string;
-	status: "blocked" | "done";
+/** One chat from QuickAsk's status.json. */
+export type QuickAskChat = {
+	id: string;
 	title: string;
-	repo: string;
-	agent: string;
+	state: "working" | "needs-you" | "answered";
+	since: string;
 };
 
-/**
- * Blocked first, then done (when `countDone`); within each group the one that
- * has waited longest (lowest state_change_seq) comes first.
- */
-export function selectWaiting(agents: HerdrAgent[], countDone: boolean): WaitingSession[] {
-	const rank = (s: AgentStatus) => (s === "blocked" ? 0 : s === "done" && countDone ? 1 : -1);
+export type Source = "herdr" | "quickask";
+
+export type WaitingSession = {
+	/** Unique across sources: "herdr:w1:p1", "quickask:<uuid>". */
+	key: string;
+	source: Source;
+	/** Herdr pane id or QuickAsk chat id. */
+	id: string;
+	status: "blocked" | "done";
+	title: string;
+	/** Repo for Herdr, "QuickAsk" for QuickAsk. */
+	repo: string;
+	/** When it started waiting (ms); orders sessions across sources. */
+	since: number;
+	/** Herdr's sequence number, to break ties among sessions first seen together. */
+	seq: number;
+};
+
+/** Herdr agents that are blocked, or done when `countDone`. `since` comes from `firstSeen`. */
+export function herdrWaiting(agents: HerdrAgent[], countDone: boolean, firstSeen: (key: string) => number): WaitingSession[] {
 	return agents
-		.filter((a) => rank(a.agent_status) >= 0)
-		.sort((a, b) => rank(a.agent_status) - rank(b.agent_status) || (a.state_change_seq ?? 0) - (b.state_change_seq ?? 0))
-		.map((a) => ({
-			paneId: a.pane_id,
-			status: a.agent_status as "blocked" | "done",
-			title: a.terminal_title_stripped?.trim() || a.agent || a.pane_id,
-			repo: repoName(a.cwd),
-			agent: a.agent ?? "agent",
+		.filter((a) => a.agent_status === "blocked" || (countDone && a.agent_status === "done"))
+		.map((a) => {
+			const status = a.agent_status as "blocked" | "done";
+			const key = `herdr:${a.pane_id}`;
+			return {
+				key,
+				source: "herdr" as const,
+				id: a.pane_id,
+				status,
+				title: a.terminal_title_stripped?.trim() || a.agent || a.pane_id,
+				repo: repoName(a.cwd),
+				since: firstSeen(`${key}:${status}`),
+				seq: a.state_change_seq ?? 0,
+			};
+		});
+}
+
+/** QuickAsk chats that need you (as blocked) or were answered unseen (as done, when `countDone`). */
+export function quickAskWaiting(chats: QuickAskChat[], countDone: boolean): WaitingSession[] {
+	return chats
+		.filter((c) => c.state === "needs-you" || (countDone && c.state === "answered"))
+		.map((c) => ({
+			key: `quickask:${c.id}`,
+			source: "quickask" as const,
+			id: c.id,
+			status: c.state === "needs-you" ? ("blocked" as const) : ("done" as const),
+			title: c.title.trim() || "QuickAsk chat",
+			repo: "QuickAsk",
+			since: Date.parse(c.since) || 0,
+			seq: 0,
 		}));
+}
+
+/** Blocked before done; within each, the one waiting longest first. */
+export function orderWaiting(items: WaitingSession[]): WaitingSession[] {
+	const rank = (s: WaitingSession) => (s.status === "blocked" ? 0 : 1);
+	return [...items].sort((a, b) => rank(a) - rank(b) || a.since - b.since || a.seq - b.seq);
+}
+
+/** Herdr-only convenience: everything first seen at once, so Herdr's own order decides. */
+export function selectWaiting(agents: HerdrAgent[], countDone: boolean): WaitingSession[] {
+	return orderWaiting(herdrWaiting(agents, countDone, () => 0));
 }
 
 export function repoName(cwd: string | undefined): string {

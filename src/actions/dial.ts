@@ -4,7 +4,7 @@ import type { JsonObject } from "@elgato/utils";
 import { hub } from "../hub";
 import { stripImage } from "../render";
 
-type Instance = { action: DialAction<JsonObject>; index: number; paneId?: string; image?: string };
+type Instance = { action: DialAction<JsonObject>; index: number; key?: string; image?: string };
 
 /** Stream Deck +: rotate to scroll through waiting sessions, press or tap to focus the shown one. */
 @action({ UUID: "com.cx.herdr.dial" })
@@ -32,7 +32,7 @@ export class WaitingDial extends SingletonAction<JsonObject> {
 		const total = waiting.length;
 		if (!inst || total === 0) return;
 		inst.index = (((inst.index + ev.payload.ticks) % total) + total) % total;
-		inst.paneId = waiting[inst.index].paneId;
+		inst.key = waiting[inst.index].key;
 		void this.#render(inst);
 	}
 
@@ -47,7 +47,7 @@ export class WaitingDial extends SingletonAction<JsonObject> {
 	async #press(id: string): Promise<void> {
 		const inst = this.#instances.get(id);
 		if (!inst) return;
-		if (!inst.paneId || !(await hub.focus(inst.paneId))) await inst.action.showAlert();
+		if (!inst.key || !(await hub.focus(inst.key))) await inst.action.showAlert();
 	}
 
 	async #renderAll(): Promise<void> {
@@ -57,10 +57,10 @@ export class WaitingDial extends SingletonAction<JsonObject> {
 	async #render(inst: Instance): Promise<void> {
 		const waiting = hub.waiting;
 		// Stay on the same pane across reorders when it is still waiting.
-		const keep = inst.paneId ? waiting.findIndex((w) => w.paneId === inst.paneId) : -1;
+		const keep = inst.key ? waiting.findIndex((w) => w.key === inst.key) : -1;
 		inst.index = keep >= 0 ? keep : Math.min(inst.index, Math.max(waiting.length - 1, 0));
 		const session = hub.online ? waiting[inst.index] : undefined;
-		inst.paneId = session?.paneId;
+		inst.key = session?.key;
 		const image = stripImage(session, inst.index, waiting.length, hub.online);
 		if (inst.image === image) return;
 		inst.image = image;

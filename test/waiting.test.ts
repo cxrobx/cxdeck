@@ -9,11 +9,11 @@ const a = (pane_id: string, agent_status: HerdrAgent["agent_status"], seq: numbe
 
 test("blocked before done, oldest first within each group; idle/working/unknown excluded", () => {
 	const got = selectWaiting([a("d2", "done", 9), a("b2", "blocked", 8), a("w", "working", 1), a("d1", "done", 3), a("i", "idle", 2), a("b1", "blocked", 5), a("u", "unknown", 0)], true);
-	assert.deepEqual(got.map((s) => s.paneId), ["b1", "b2", "d1", "d2"]);
+	assert.deepEqual(got.map((s) => s.id), ["b1", "b2", "d1", "d2"]);
 });
 
 test("countDone=false drops done", () => {
-	assert.deepEqual(selectWaiting([a("d", "done", 1), a("b", "blocked", 2)], false).map((s) => s.paneId), ["b"]);
+	assert.deepEqual(selectWaiting([a("d", "done", 1), a("b", "blocked", 2)], false).map((s) => s.id), ["b"]);
 });
 
 test("title falls back to agent kind when blank; repo is cwd basename", () => {

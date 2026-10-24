@@ -1,12 +1,13 @@
 /**
- * The one shared state every action renders from: the Herdr watcher, the
- * plugin's global settings, and the focus routine (Herdr pane + Ghostty tab).
+ * The one shared state every action renders from: the Herdr and QuickAsk
+ * watchers, the plugin's global settings, and the focus routine.
  */
 import streamDeck from "@elgato/streamdeck";
 
 import { raiseHerdrWindow } from "./ghostty";
 import { HerdrWatcher } from "./herdr";
-import { selectWaiting, type WaitingSession } from "./waiting";
+import { openQuickAskChat, QuickAskWatcher } from "./quickask";
+import { herdrWaiting, orderWaiting, quickAskWaiting, type WaitingSession } from "./waiting";
 
 export type GlobalSettings = {
 	/** Count "done" (finished a turn, unseen) as waiting. Default true. */
@@ -18,22 +19,38 @@ export type GlobalSettings = {
 type Listener = () => void;
 
 class Hub {
-	readonly watcher = new HerdrWatcher();
+	readonly herdr = new HerdrWatcher();
+	readonly quickAsk = new QuickAskWatcher();
 	settings: GlobalSettings = {};
 	#listeners = new Set<Listener>();
+	/** When each Herdr pane entered its current waiting state, as first seen by the plugin. */
+	#firstSeen = new Map<string, number>();
 
+	/** Something to show: Herdr is up, or QuickAsk has chats waiting. False shows "offline". */
 	get online(): boolean {
-		return this.watcher.state.online;
+		return this.herdr.state.online || this.waiting.length > 0;
 	}
 
 	get waiting(): WaitingSession[] {
-		return selectWaiting(this.watcher.state.agents, this.settings.countDone ?? true);
+		const countDone = this.settings.countDone ?? true;
+		const now = Date.now();
+		const seen = new Set<string>();
+		const stamp = (key: string) => {
+			seen.add(key);
+			if (!this.#firstSeen.has(key)) this.#firstSeen.set(key, now);
+			return this.#firstSeen.get(key)!;
+		};
+		const items = [...herdrWaiting(this.herdr.state.agents, countDone, stamp), ...quickAskWaiting(this.quickAsk.chats, countDone)];
+		for (const key of this.#firstSeen.keys()) if (!seen.has(key)) this.#firstSeen.delete(key);
+		return orderWaiting(items);
 	}
 
 	start(): void {
-		this.watcher.on("change", () => this.#emit());
-		this.watcher.on("log", (m: string) => streamDeck.logger.warn(m));
-		this.watcher.start();
+		this.herdr.on("change", () => this.#emit());
+		this.herdr.on("log", (m: string) => streamDeck.logger.warn(m));
+		this.quickAsk.on("change", () => this.#emit());
+		this.herdr.start();
+		this.quickAsk.start();
 	}
 
 	applySettings(s: GlobalSettings): void {
@@ -46,16 +63,23 @@ class Hub {
 		return () => this.#listeners.delete(fn);
 	}
 
-	/** Focus the pane in Herdr, then raise the Ghostty tab. Returns false if Herdr refused. */
-	async focus(paneId: string): Promise<boolean> {
+	/** Bring a waiting session forward by its key. Returns false if it couldn't. */
+	async focus(key: string): Promise<boolean> {
+		const [source, ...rest] = key.split(":");
+		const id = rest.join(":");
+		if (source === "quickask") {
+			const ok = await openQuickAskChat(id);
+			streamDeck.logger.info(`opened QuickAsk chat ${id}: ${ok ? "ok" : "failed"}`);
+			return ok;
+		}
 		try {
-			await this.watcher.focus(paneId);
+			await this.herdr.focus(id);
 		} catch (e) {
-			streamDeck.logger.error(`focus ${paneId} failed: ${(e as Error).message}`);
+			streamDeck.logger.error(`focus ${id} failed: ${(e as Error).message}`);
 			return false;
 		}
 		const how = await raiseHerdrWindow(this.settings.windowMatch ?? "Herdr");
-		streamDeck.logger.info(`focused ${paneId}; ghostty raised via ${how}`);
+		streamDeck.logger.info(`focused ${id}; ghostty raised via ${how}`);
 		return true;
 	}
 
