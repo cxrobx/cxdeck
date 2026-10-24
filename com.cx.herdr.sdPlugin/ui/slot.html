@@ -1,0 +1,23 @@
+<!doctype html>
+<html>
+	<head lang="en">
+		<title>Agent slot</title>
+		<meta charset="utf-8" />
+		<script src="https://sdpi-components.dev/releases/v4/sdpi-components.js"></script>
+	</head>
+	<body>
+		<sdpi-item label="Slot">
+			<sdpi-select setting="slot" default="0" value-type="number">
+				<option value="0">Auto (placement order)</option>
+				<option value="1">1</option><option value="2">2</option><option value="3">3</option><option value="4">4</option>
+				<option value="5">5</option><option value="6">6</option><option value="7">7</option><option value="8">8</option>
+			</sdpi-select>
+		</sdpi-item>
+		<sdpi-item label="Count done">
+			<sdpi-checkbox setting="countDone" global default="true" label="Also show agents that finished a turn (unseen)"></sdpi-checkbox>
+		</sdpi-item>
+		<sdpi-item label="Ghostty tab">
+			<sdpi-textfield setting="windowMatch" global placeholder="Herdr"></sdpi-textfield>
+		</sdpi-item>
+	</body>
+</html>
