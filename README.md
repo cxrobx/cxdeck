@@ -1,7 +1,8 @@
-# Herdr Agents — Stream Deck plugin
+# CX Deck — Stream Deck plugin
 
 Shows which Herdr agent sessions and QuickAsk chats need you, and brings one
-forward on press.
+forward on press. Also: Zen link keys that open a site in the right Zen container.
+(Plugin UUID stays `com.cx.herdr` so placed keys keep working.)
 
 - **Agent slot** (key) — the k-th waiting session: state, title, repo. Slots number
   themselves in placement order (row, then column); override in the inspector.
@@ -9,6 +10,12 @@ forward on press.
   waited longest.
 - **Waiting dial** (Stream Deck +) — rotate through waiting sessions, press or tap
   to focus the one shown.
+- **Zen link** (key) — opens a URL in Zen in its container (Auto = Zen MCP's
+  `~/.config/zen-mcp/containers.json` host rules, or pick one), or brings forward a tab
+  already on that site (or exact page) **in that container**. Talks to the Zen MCP daemon
+  (`ws://127.0.0.1:8766`, token `~/.config/zen-mcp/auth.token`); daemon or extension down
+  = alert, never a plain open in the wrong jar. Console hosts need an explicit container.
+  The key shows the site's icon (cached in `~/Library/Caches/com.cx.deck/favicons`).
 
 "Waiting" = `blocked` (approval or question UI) first, then `done` (finished a turn,
 unseen; toggle with *Count done*), oldest first within each. Focusing marks a done

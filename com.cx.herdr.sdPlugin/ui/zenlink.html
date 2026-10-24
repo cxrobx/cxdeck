@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+	<head lang="en">
+		<title>Zen link</title>
+		<meta charset="utf-8" />
+		<script src="https://sdpi-components.dev/releases/v4/sdpi-components.js"></script>
+	</head>
+	<body>
+		<sdpi-item label="URL">
+			<sdpi-textfield setting="url" placeholder="x.com"></sdpi-textfield>
+		</sdpi-item>
+		<sdpi-item label="Container">
+			<sdpi-select setting="container" datasource="getContainers" hot-reload loading="Asking Zen…" default=""></sdpi-select>
+		</sdpi-item>
+		<sdpi-item label="Reuse a tab">
+			<sdpi-select setting="match" default="site">
+				<option value="site">Any page on this site</option>
+				<option value="page">Only this exact page</option>
+			</sdpi-select>
+		</sdpi-item>
+		<sdpi-item label="Label">
+			<sdpi-textfield setting="label" placeholder="(site name)"></sdpi-textfield>
+		</sdpi-item>
+	</body>
+</html>

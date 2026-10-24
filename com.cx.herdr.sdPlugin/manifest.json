@@ -1,6 +1,6 @@
 {
 	"$schema": "https://schemas.elgato.com/streamdeck/plugins/manifest.json",
-	"Name": "Herdr Agents",
+	"Name": "CX Deck",
 	"Version": "0.1.0.0",
 	"Author": "Chris Robinson",
 	"Actions": [
@@ -10,8 +10,15 @@
 			"Icon": "imgs/actions/slot/icon",
 			"Tooltip": "Shows the k-th Herdr agent waiting for you. Press to focus it.",
 			"PropertyInspectorPath": "ui/slot.html",
-			"Controllers": ["Keypad"],
-			"States": [{ "Image": "imgs/actions/slot/key", "ShowTitle": false }],
+			"Controllers": [
+				"Keypad"
+			],
+			"States": [
+				{
+					"Image": "imgs/actions/slot/key",
+					"ShowTitle": false
+				}
+			],
 			"UserTitleEnabled": false
 		},
 		{
@@ -20,8 +27,15 @@
 			"Icon": "imgs/actions/next/icon",
 			"Tooltip": "How many Herdr agents are waiting. Press to focus the one that has waited longest.",
 			"PropertyInspectorPath": "ui/global.html",
-			"Controllers": ["Keypad"],
-			"States": [{ "Image": "imgs/actions/next/key", "ShowTitle": false }],
+			"Controllers": [
+				"Keypad"
+			],
+			"States": [
+				{
+					"Image": "imgs/actions/next/key",
+					"ShowTitle": false
+				}
+			],
 			"UserTitleEnabled": false
 		},
 		{
@@ -30,23 +44,60 @@
 			"Icon": "imgs/actions/dial/icon",
 			"Tooltip": "Rotate to scroll through waiting Herdr agents; press or tap to focus.",
 			"PropertyInspectorPath": "ui/global.html",
-			"Controllers": ["Encoder"],
+			"Controllers": [
+				"Encoder"
+			],
 			"Encoder": {
 				"Icon": "imgs/actions/dial/icon",
 				"layout": "layouts/strip.json",
-				"TriggerDescription": { "Rotate": "Scroll waiting agents", "Push": "Focus agent", "Touch": "Focus agent" }
+				"TriggerDescription": {
+					"Rotate": "Scroll waiting agents",
+					"Push": "Focus agent",
+					"Touch": "Focus agent"
+				}
 			},
-			"States": [{ "Image": "imgs/actions/dial/key" }]
+			"States": [
+				{
+					"Image": "imgs/actions/dial/key"
+				}
+			]
+		},
+		{
+			"Name": "Zen link",
+			"UUID": "com.cx.herdr.zenlink",
+			"Icon": "imgs/actions/zenlink/icon",
+			"Tooltip": "Open a site in Zen in its container, or bring forward the tab already showing it.",
+			"PropertyInspectorPath": "ui/zenlink.html",
+			"Controllers": [
+				"Keypad"
+			],
+			"States": [
+				{
+					"Image": "imgs/actions/zenlink/key",
+					"ShowTitle": false
+				}
+			],
+			"UserTitleEnabled": false
 		}
 	],
-	"Category": "Herdr Agents",
+	"Category": "CX Deck",
 	"CategoryIcon": "imgs/plugin/category-icon",
 	"CodePath": "bin/plugin.js",
-	"Description": "Shows which Herdr agent sessions need your input and focuses them on press.",
+	"Description": "Herdr agents and QuickAsk chats that need you, and Zen links that open in the right container.",
 	"Icon": "imgs/plugin/marketplace",
 	"SDKVersion": 3,
-	"Software": { "MinimumVersion": "7.1" },
-	"OS": [{ "Platform": "mac", "MinimumVersion": "12" }],
-	"Nodejs": { "Version": "24", "Debug": "enabled" },
+	"Software": {
+		"MinimumVersion": "7.1"
+	},
+	"OS": [
+		{
+			"Platform": "mac",
+			"MinimumVersion": "12"
+		}
+	],
+	"Nodejs": {
+		"Version": "24",
+		"Debug": "enabled"
+	},
 	"UUID": "com.cx.herdr"
 }

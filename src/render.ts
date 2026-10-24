@@ -107,3 +107,35 @@ export function stripImage(session: WaitingSession | undefined, index: number, t
 export function truncate(s: string, n: number): string {
 	return s.length > n ? s.slice(0, n - 1) + "…" : s;
 }
+
+/**
+ * Zen link key. With the site's icon: the icon centred on black like Stream Deck's own
+ * Website key, the container as a small coloured line beneath. Without one: the site name.
+ */
+export function linkImage(label: string, container: string | null, color: string | null, icon: string | null = null): string {
+	if (icon) {
+		const foot = container
+			? `<rect x="0" y="140" width="144" height="4" fill="${color ?? FAINT}"/>` + text(72, 131, truncate(container, 16), 13, color ?? MUTED, 600, "middle")
+			: text(72, 131, "pick a container", 12, COLORS.blocked.accent, 600, "middle");
+		return svg(
+			144,
+			144,
+			`<rect width="144" height="144" fill="#000000"/>` +
+				`<image xmlns:xlink="http://www.w3.org/1999/xlink" x="32" y="16" width="80" height="80" xlink:href="${icon}" href="${icon}"/>` +
+				foot,
+		);
+	}
+	const lines = wrap(label, 11, 3);
+	const firstY = 74 - (lines.length - 1) * 11;
+	const chip = container
+		? `<circle cx="20" cy="124" r="5" fill="${color ?? FAINT}"/>` + text(31, 129, truncate(container, 13), 14, color ?? MUTED, 600)
+		: text(15, 129, "pick a container", 13, COLORS.blocked.accent, 600);
+	return svg(
+		144,
+		144,
+		`<rect width="144" height="144" fill="${GROUND}"/><rect width="5" height="144" fill="${color ?? GHOST}"/>` +
+			text(15, 27, "ZEN", 12, FAINT, 700, "start", 1.2) +
+			lines.map((l, i) => text(15, firstY + i * 22, l, 19, INK, 600)).join("") +
+			chip,
+	);
+}
