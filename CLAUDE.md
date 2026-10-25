@@ -37,8 +37,8 @@ functions in `src/waiting.ts` (unit-tested).
   retitles that tab every poll, which shows as a flickering title.
 - **Zen links never fall back to a plain open.** Daemon down, console host or no route =
   alert. A wrong container is an incident (wrong logins), not a degraded success.
-- The Zen MCP repo is public: nothing real goes in tracked fixtures (use placeholder
-  domains in `test/zen-routes.test.ts`).
+- Tests use placeholder domains and containers, never Chris's real routes or tabs
+  (`test/zen-routes.test.ts`); the live routes file is read at runtime only.
 
 ## Outside this repo
 
