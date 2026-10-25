@@ -15,6 +15,24 @@ has the user-facing behaviour and the mechanics of each source; read it first.
 Each source merges in `src/hub.ts`; ordering and the blocked/done mapping are pure
 functions in `src/waiting.ts` (unit-tested).
 
+## "On you" (its own key `com.cx.herdr.onyou` and dial `com.cx.herdr.onyoudial`)
+
+The second layer: turns Chris has **seen but not answered** that still leave him a next
+step. Never merged into the waiting list. `src/on-you.ts`:
+
+- A Claude turn qualifies once it is `done`, seen (plain tab: the deck saw it in front;
+  Herdr pane: Herdr no longer says `done`) and untouched for 10 minutes. Only then is it
+  judged, once, by **Claude Haiku via `claude -p`** (no tools, no MCP, hooks off, no
+  session saved, cwd = tmp). **Never Jev or any third party**: Chris ruled TypeSafe out
+  on 2026-10-24 (no published retention period). Verdicts and dismissals are cached per
+  turn in `~/Library/Caches/com.cx.deck/on-you.json`.
+- The hook keeps the last prompt and the trimmed last answer for this, **except under
+  `~/clients`** (state only). It also records Herdr panes now (`herdr_pane`); the
+  plain-tab watcher must skip those, or every Herdr pane shows twice and its press fails.
+- QuickAsk chats come from QuickAsk's own ring (`still-on-you` in status.json), not re-judged.
+- Key: press focuses the oldest, hold (≥600 ms) dismisses it until the session's next
+  turn. Dial: rotate, press/tap focuses the one shown, long-touch dismisses it.
+
 ## Things that bite
 
 - **Developer mode is required**: run `npx streamdeck dev` once, or `streamdeck restart` is

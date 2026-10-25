@@ -7,6 +7,7 @@ import streamDeck from "@elgato/streamdeck";
 import { ClaudeTermWatcher } from "./claude-term";
 import { raiseHerdrWindow } from "./ghostty";
 import { HerdrWatcher } from "./herdr";
+import { OnYou, type Turn } from "./on-you";
 import { openQuickAskChat, QuickAskWatcher } from "./quickask";
 import { claudeTermWaiting, herdrWaiting, orderWaiting, quickAskWaiting, type WaitingSession } from "./waiting";
 
@@ -23,6 +24,7 @@ class Hub {
 	readonly herdr = new HerdrWatcher();
 	readonly quickAsk = new QuickAskWatcher();
 	readonly claudeTerm = new ClaudeTermWatcher();
+	readonly onYou = new OnYou();
 	settings: GlobalSettings = {};
 	#listeners = new Set<Listener>();
 	/** When each Herdr pane entered its current waiting state, as first seen by the plugin. */
@@ -57,9 +59,14 @@ class Hub {
 		this.herdr.on("log", (m: string) => streamDeck.logger.warn(m));
 		this.quickAsk.on("change", () => this.#emit());
 		this.claudeTerm.on("change", () => this.#emit());
+		this.onYou.on("change", () => this.#emit());
+		this.onYou.on("log", (m: string) => streamDeck.logger.info(`on you: ${m}`));
 		this.herdr.start();
 		this.quickAsk.start();
 		this.claudeTerm.start();
+		// Re-judged on every source change; the OnYou tick covers the 10-minute wait.
+		this.subscribe(() => this.onYou.refresh());
+		this.onYou.start(() => this.#onYouInputs());
 	}
 
 	applySettings(s: GlobalSettings): void {
@@ -95,6 +102,25 @@ class Hub {
 		const how = await raiseHerdrWindow(this.settings.windowMatch ?? "Herdr");
 		streamDeck.logger.info(`focused ${id}; ghostty raised via ${how}`);
 		return true;
+	}
+
+	/** What "On you" reads: every Claude turn, whether it's been seen, how to show and focus it. */
+	#onYouInputs() {
+		const agents = new Map(this.herdr.state.agents.map((a) => [a.pane_id, a]));
+		return {
+			turns: this.claudeTerm.all as Turn[],
+			// A Herdr pane is seen once Herdr stops calling it "done"; a plain tab, once the deck saw it in front.
+			seen: (t: Turn) => (t.herdr_pane ? agents.has(t.herdr_pane) && agents.get(t.herdr_pane)!.agent_status !== "done" : this.claudeTerm.seen.has(`${t.session_id}:${t.since}`)),
+			describe: (t: Turn) => {
+				if (!t.herdr_pane) {
+					const s = this.claudeTerm.sessions.find((x) => x.session_id === t.session_id);
+					return s ? { key: `claude:${s.session_id}`, title: this.claudeTerm.title(s) } : null;
+				}
+				const a = agents.get(t.herdr_pane);
+				return a ? { key: `herdr:${a.pane_id}`, title: a.terminal_title_stripped?.trim() || a.agent || "Herdr agent" } : null;
+			},
+			quickAsk: this.quickAsk.chats.filter((c) => c.state === "still-on-you"),
+		};
 	}
 
 	#emit(): void {

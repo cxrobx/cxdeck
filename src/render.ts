@@ -13,6 +13,9 @@ export const COLORS = {
 	done: { accent: "#3ddc84", deep: "#0d2e1c", label: "DONE" },
 } as const;
 
+/** QuickAsk's "still on me" blue. */
+export const ON_YOU = { accent: "#7aa6e8", deep: "#101c2e" } as const;
+
 const GROUND = "#0c0c0e";
 const INK = "#f4f4f5";
 const MUTED = "#8a8a93";
@@ -72,6 +75,39 @@ export function countImage(waiting: WaitingSession[], online: boolean): string {
 		`<rect width="144" height="144" fill="${c ? c.deep : GROUND}"/>` +
 			text(72, 88, String(waiting.length), 68, c ? INK : GHOST, 300, "middle") +
 			text(72, 122, sub, 13, c ? c.accent : "#55555c", 600, "middle"),
+	);
+}
+
+/** "On you" key: header with the count, the longest-waiting item below, a hold hint. */
+export function onYouImage(item: { title: string; repo: string } | undefined, count: number): string {
+	if (!item) {
+		return svg(144, 144, `<rect width="144" height="144" fill="${GROUND}"/>` + text(72, 66, "ON YOU", 14, GHOST, 800, "middle", 0.5) + text(72, 90, "nothing", 13, "#55555c", 600, "middle"));
+	}
+	const lines = wrap(item.title, 13, 3);
+	return svg(
+		144,
+		144,
+		`<rect width="144" height="144" fill="${CARD}"/>` +
+			headerBar(144, 30, ON_YOU.accent, "ON YOU", String(count), 13) +
+			lines.map((l, i) => text(10, 56 + i * 20, l, 16, INK, 600)).join("") +
+			text(10, 118, truncate(item.repo, 14), 13, ON_YOU.accent, 600) +
+			text(10, 136, "hold: dismiss", 10, FAINT, 600),
+	);
+}
+
+/** "On you" dial strip: blue header with k/N, two title lines, source. */
+export function onYouStripImage(item: { title: string; repo: string } | undefined, index: number, total: number): string {
+	if (!item) {
+		return svg(200, 100, `<rect width="200" height="100" fill="${GROUND}"/><circle cx="100" cy="38" r="4" fill="#2a2a2e"/>` + text(100, 66, "Nothing on you", 13, "#55555c", 600, "middle"));
+	}
+	const lines = wrap(item.title, 17, 2);
+	return svg(
+		200,
+		100,
+		`<rect width="200" height="100" fill="${CARD}"/>` +
+			headerBar(200, 24, ON_YOU.accent, "ON YOU", `${index + 1}/${total}`, 11) +
+			lines.map((l, i) => text(10, 48 + i * 19, l, 15, INK, 600)).join("") +
+			text(10, 91, truncate(item.repo, 19), 10, ON_YOU.accent, 600),
 	);
 }
 

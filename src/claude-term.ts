@@ -34,6 +34,11 @@ export type TermSession = {
 	cwd: string;
 	tty: string;
 	pid: number;
+	/** Set for a session in a Herdr pane: Herdr owns its waiting state, so it is used only for "On you". */
+	herdr_pane?: string;
+	/** The last prompt and the trimmed last answer (absent under ~/clients), for "On you". */
+	question?: string;
+	answer?: string;
 };
 
 function alive(pid: number): boolean {
@@ -172,7 +177,10 @@ export function cleanTitle(name: string): string {
 type Learned = { route: Route; id: string; title: string; ghostty: number | null };
 
 export class ClaudeTermWatcher extends EventEmitter {
+	/** Sessions in plain Ghostty tabs: the ones this watcher shows and focuses. */
 	sessions: TermSession[] = [];
+	/** Every live recorded session, Herdr panes included. */
+	all: TermSession[] = [];
 	/** tty → the Ghostty terminal showing it, the route that reached it, and its title when learned. */
 	readonly terminalsByTty = new Map<string, Learned>();
 	/** session:since pairs you have already looked at while done. */
@@ -223,9 +231,10 @@ export class ClaudeTermWatcher extends EventEmitter {
 	}
 
 	refresh(): void {
-		const next = readSessions(this.dir);
-		if (JSON.stringify(next) !== JSON.stringify(this.sessions)) {
-			this.sessions = next;
+		const all = readSessions(this.dir);
+		if (JSON.stringify(all) !== JSON.stringify(this.all)) {
+			this.all = all;
+			this.sessions = all.filter((s) => !s.herdr_pane);
 			this.emit("change");
 		}
 		const now = Date.now();

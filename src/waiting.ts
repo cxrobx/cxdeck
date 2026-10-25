@@ -24,7 +24,7 @@ export type HerdrAgent = {
 export type QuickAskChat = {
 	id: string;
 	title: string;
-	state: "working" | "needs-you" | "answered";
+	state: "working" | "needs-you" | "answered" | "still-on-you";
 	since: string;
 };
 

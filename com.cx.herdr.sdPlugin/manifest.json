@@ -39,6 +39,45 @@
 			"UserTitleEnabled": false
 		},
 		{
+			"Name": "On you",
+			"UUID": "com.cx.herdr.onyou",
+			"Icon": "imgs/actions/onyou/icon",
+			"Tooltip": "Sessions you read but never answered that still leave you a next step. Press to focus the oldest; hold to dismiss it.",
+			"Controllers": [
+				"Keypad"
+			],
+			"States": [
+				{
+					"Image": "imgs/actions/onyou/key",
+					"ShowTitle": false
+				}
+			],
+			"UserTitleEnabled": false
+		},
+		{
+			"Name": "On you dial",
+			"UUID": "com.cx.herdr.onyoudial",
+			"Icon": "imgs/actions/onyou/icon",
+			"Tooltip": "Rotate through sessions you read but never answered; press or tap to focus, long-touch to dismiss.",
+			"Controllers": [
+				"Encoder"
+			],
+			"Encoder": {
+				"Icon": "imgs/actions/onyou/icon",
+				"layout": "layouts/strip.json",
+				"TriggerDescription": {
+					"Rotate": "Scroll sessions on you",
+					"Push": "Focus session",
+					"Touch": "Focus \u00b7 long-touch dismisses"
+				}
+			},
+			"States": [
+				{
+					"Image": "imgs/actions/onyou/key"
+				}
+			]
+		},
+		{
 			"Name": "Waiting dial",
 			"UUID": "com.cx.herdr.dial",
 			"Icon": "imgs/actions/dial/icon",

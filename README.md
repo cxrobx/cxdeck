@@ -16,6 +16,11 @@ Ghostty tabs need you, and brings one forward on press. Also: Zen link keys that
   (`ws://127.0.0.1:8766`, token `~/.config/zen-mcp/auth.token`); daemon or extension down
   = alert, never a plain open in the wrong jar. Console hosts need an explicit container.
   The key shows the site's icon (cached in `~/Library/Caches/com.cx.deck/favicons`).
+- **On you** (key) — sessions you've read but never answered whose last answer still
+  leaves you a next step (a question, a decision, an offer to carry on). Shows the count
+  and the one that has waited longest; press focuses it, hold dismisses it.
+- **On you dial** (Stream Deck +) — the same list on a dial, modeled on the waiting
+  dial: rotate through it, press or tap to focus, long-touch the strip to dismiss.
 
 "Waiting" = `blocked` (approval or question UI) first, then `done` (finished a turn,
 unseen; toggle with *Count done*), oldest first within each. Focusing marks a done
@@ -33,14 +38,22 @@ session seen, so it drops off; a blocked one stays until answered.
   in `~/.claude/settings.json` on UserPromptSubmit, PreToolUse AskUserQuestion,
   PermissionRequest, PostToolUse, Notification, Stop, SessionEnd) writes one file per
   session to `~/.local/state/cx-deck/claude/<session_id>.json` (state, cwd, tty, claude
-  pid). It skips sessions with a `herdr` process above them (read from the process
-  tree; `HERDR_ENV` leaks into plain tabs), Meeting Copilot, and anything without a tty
-  (`claude -p`). Tests: `~/.claude/hooks/tests/test-cx-deck-state.sh`.
+  pid). Sessions with a `herdr` process above them (read from the process tree;
+  `HERDR_ENV` leaks into plain tabs) are tagged with their `HERDR_PANE_ID` and used only
+  for *On you*; it skips Meeting Copilot and anything without a tty (`claude -p`). Tests: `~/.claude/hooks/tests/test-cx-deck-state.sh`.
   The plugin finds a session's tab by briefly retitling its tty to a marker and asking
   Ghostty which terminal shows it, then restores the tab's title. Two Ghostty processes
   can run at once (`ghostty -e …` starts a second), and AppleScript-by-name and JXA each
   reach a different one, so both are searched and the owning Ghostty is raised by pid.
   A done session clears once its tab has been in front.
+
+- **On you**: the hook also keeps each session's last prompt and the last answer
+  (trimmed to its first 1,500 and last 2,500 characters), never for anything under
+  `~/clients`. A turn that finished, that you've seen, and that sat untouched for 10
+  minutes is judged once by Claude Haiku (`claude -p`, no tools, no MCP, hooks off,
+  nothing saved): "does the user still owe a next step?" Turns you answer quickly are
+  never sent. Verdicts and dismissals: `~/Library/Caches/com.cx.deck/on-you.json`.
+  QuickAsk chats with the "still on me" ring arrive as `still-on-you` in status.json.
 
 - Talks to `~/.config/herdr/herdr.sock` directly. State is pushed: `events.subscribe`
   on `pane.agent_detected` / `pane.closed` / `pane.focused` plus a per-pane
