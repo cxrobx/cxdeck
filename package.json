@@ -1,5 +1,5 @@
 {
-    "name": "streamdeck-herdr",
+    "name": "cxdeck",
     "private": true,
     "scripts": {
         "build": "rollup -c",

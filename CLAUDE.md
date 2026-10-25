@@ -1,4 +1,4 @@
-# CX Deck (streamdeck-herdr)
+# CX Deck (cxdeck)
 
 Stream Deck plugin, plugin UUID `com.cx.herdr`, shown in the app as **CX Deck**. It shows which
 agent sessions need Chris and brings one forward on press, plus Zen link keys. The README
