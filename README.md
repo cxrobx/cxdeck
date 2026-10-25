@@ -1,7 +1,7 @@
 # CX Deck — Stream Deck plugin
 
-Shows which Herdr agent sessions and QuickAsk chats need you, and brings one
-forward on press. Also: Zen link keys that open a site in the right Zen container.
+Shows which Herdr agent sessions, QuickAsk chats and Claude Code sessions in plain
+Ghostty tabs need you, and brings one forward on press. Also: Zen link keys that open a site in the right Zen container.
 (Plugin UUID stays `com.cx.herdr` so placed keys keep working.)
 
 - **Agent slot** (key) — the k-th waiting session: state, title, repo. Slots number
@@ -29,6 +29,19 @@ session seen, so it drops off; a blocked one stays until answered.
   with done; press opens `quickask://chat/<id>`. Herdr panes are stamped when the plugin
   first sees them waiting, so both sources order by how long they have waited.
 
+- **Claude Code in plain Ghostty tabs**: `~/.claude/hooks/cx-deck-state.sh` (registered
+  in `~/.claude/settings.json` on UserPromptSubmit, PreToolUse AskUserQuestion,
+  PermissionRequest, PostToolUse, Notification, Stop, SessionEnd) writes one file per
+  session to `~/.local/state/cx-deck/claude/<session_id>.json` (state, cwd, tty, claude
+  pid). It skips sessions with a `herdr` process above them (read from the process
+  tree; `HERDR_ENV` leaks into plain tabs), Meeting Copilot, and anything without a tty
+  (`claude -p`). Tests: `~/.claude/hooks/tests/test-cx-deck-state.sh`.
+  The plugin finds a session's tab by briefly retitling its tty to a marker and asking
+  Ghostty which terminal shows it, then restores the tab's title. Two Ghostty processes
+  can run at once (`ghostty -e …` starts a second), and AppleScript-by-name and JXA each
+  reach a different one, so both are searched and the owning Ghostty is raised by pid.
+  A done session clears once its tab has been in front.
+
 - Talks to `~/.config/herdr/herdr.sock` directly. State is pushed: `events.subscribe`
   on `pane.agent_detected` / `pane.closed` / `pane.focused` plus a per-pane
   `pane.agent_status_changed` (Herdr requires a `pane_id` on that one), each
@@ -41,7 +54,7 @@ session seen, so it drops off; a blocked one stays until answered.
 
 ```sh
 npm install
-npm test                 # selection logic + socket client against a fake Herdr
+npm test                 # selection logic, state files, routes, socket client against a fake Herdr
 npm run build
 streamdeck link com.cx.herdr.sdPlugin   # once
 streamdeck dev           # once — `streamdeck restart` is a no-op without developer mode

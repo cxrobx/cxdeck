@@ -1,6 +1,7 @@
 /**
  * Pure selection logic: which sessions need Chris, in what order. Sessions come
- * from Herdr (agent panes) and QuickAsk (popup chats). No I/O here so it can be
+ * from Herdr (agent panes), QuickAsk (popup chats) and Claude Code in plain
+ * Ghostty tabs (state files written by a hook). No I/O here so it can be
  * unit-tested without either app or the Stream Deck.
  */
 
@@ -27,7 +28,7 @@ export type QuickAskChat = {
 	since: string;
 };
 
-export type Source = "herdr" | "quickask";
+export type Source = "herdr" | "quickask" | "claude";
 
 export type WaitingSession = {
 	/** Unique across sources: "herdr:w1:p1", "quickask:<uuid>". */
@@ -77,6 +78,25 @@ export function quickAskWaiting(chats: QuickAskChat[], countDone: boolean): Wait
 			title: c.title.trim() || "QuickAsk chat",
 			repo: "QuickAsk",
 			since: Date.parse(c.since) || 0,
+			seq: 0,
+		}));
+}
+
+/** A plain-terminal Claude session, already filtered to the ones waiting (see ClaudeTermWatcher). */
+export type TermWaiting = { session_id: string; state: "needs-you" | "done"; since: string; title: string; cwd: string };
+
+/** Plain-terminal Claude sessions: needs-you as blocked, done as done (when `countDone`). */
+export function claudeTermWaiting(sessions: TermWaiting[], countDone: boolean): WaitingSession[] {
+	return sessions
+		.filter((s) => s.state === "needs-you" || countDone)
+		.map((s) => ({
+			key: `claude:${s.session_id}`,
+			source: "claude" as const,
+			id: s.session_id,
+			status: s.state === "needs-you" ? ("blocked" as const) : ("done" as const),
+			title: s.title,
+			repo: repoName(s.cwd),
+			since: Date.parse(s.since) || 0,
 			seq: 0,
 		}));
 }
