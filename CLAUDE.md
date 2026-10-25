@@ -35,6 +35,10 @@ functions in `src/waiting.ts` (unit-tested).
   from the env.
 - **A failed tab match backs off 5 min** (a press still retries). Without it the plugin
   retitles that tab every poll, which shows as a flickering title.
+- **Key SVGs take exactly one `font-family`.** Stream Deck's renderer ignores a
+  comma-separated list entirely (it drew a default sans, not even the fallback), so
+  `src/render.ts` names `JetBrains Mono` alone (QuickAsk's font, installed system-wide).
+  Check a font change on the real deck, zoomed, not in Chrome: Chrome renders lists fine.
 - **Zen links never fall back to a plain open.** Daemon down, console host or no route =
   alert. A wrong container is an incident (wrong logins), not a degraded success.
 - Tests use placeholder domains and containers, never Chris's real routes or tabs
