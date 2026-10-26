@@ -4,6 +4,8 @@ Shows which Herdr agent sessions, QuickAsk chats and Claude Code sessions in pla
 Ghostty tabs need you, and brings one forward on press. Also: Zen link keys that open a site in the right Zen container.
 (Plugin UUID stays `com.cx.herdr` so placed keys keep working.)
 
+Source available under the [Business Source License 1.1](LICENSE): free for personal use and inside your own organisation. It converts to Apache 2.0 on 2030-10-26.
+
 - **Agent slot** (key) — the k-th waiting session: state, title, repo. Slots number
   themselves in placement order (row, then column); override in the inspector.
 - **Next waiting** (key) — how many are waiting; press focuses the one that has

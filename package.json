@@ -22,5 +22,6 @@
     "dependencies": {
         "@elgato/streamdeck": "^3.0.3",
         "@elgato/utils": "^0.6.1"
-    }
+    },
+    "license": "BUSL-1.1"
 }
