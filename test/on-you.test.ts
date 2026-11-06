@@ -50,7 +50,7 @@ test("OnYou judges once, lists yes verdicts oldest first, and dismisses per turn
 	const verdicts: Record<string, boolean> = { "q-a": true, "q-b": false, "q-c": true };
 	const judgeFn = async (q: string) => (asked.push(q), verdicts[q] ?? null);
 	const turns = [turn("a", { question: "q-a" }), turn("b", { question: "q-b" }), turn("c", { question: "q-c", since: new Date(T0 - 60_000).toISOString() })];
-	const inputs = (): Inputs => ({ turns, seen: () => true, describe: (t) => ({ key: `claude:${t.session_id}`, title: t.session_id }), quickAsk: [] });
+	const inputs = (): Inputs => ({ turns, seen: () => true, describe: (t) => ({ key: `claude:${t.session_id}`, title: t.session_id }), ready: [] });
 
 	const onYou = new OnYou(judgeFn, file);
 	onYou.start(inputs);
@@ -79,7 +79,7 @@ test("OnYou judges once, lists yes verdicts oldest first, and dismisses per turn
 test("OnYou lists QuickAsk's rings without judging them", async () => {
 	let called = false;
 	const onYou = new OnYou(async () => ((called = true), true), path.join(tmp, "qa.json"));
-	onYou.start(() => ({ turns: [], seen: () => true, describe: () => null, quickAsk: [{ id: "x", title: "chat x", since: "2026-10-24T09:00:00Z" }] }));
+	onYou.start(() => ({ turns: [], seen: () => true, describe: () => null, ready: [{ key: "quickask:x", id: "x", title: "chat x", repo: "QuickAsk", since: "2026-10-24T09:00:00Z" }] }));
 	onYou.stop();
 	await settle();
 	assert.deepEqual(onYou.items.map((i) => [i.key, i.repo]), [["quickask:x", "QuickAsk"]]);

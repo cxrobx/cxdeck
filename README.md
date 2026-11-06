@@ -58,7 +58,8 @@ session seen, so it drops off; a blocked one stays until answered.
   opens `t3code://threads/<environment-id>/<thread-id>` (environment id from
   `~/.t3/userdata/environment-id`). That opens the thread in T3 and moves its
   `lastVisitedAt`, so a done thread drops off. The T3 app must be running on this Mac, or
-  the link launches it. T3 sessions are not part of *On you* yet.
+  the link launches it. A thread you have seen that is still unsettled in T3 goes to *On you* instead (no
+  judging: T3's own settled mark decides), and leaves it when you settle or archive it.
 
 - **On you**: the hook also keeps each session's last prompt and the last answer
   (trimmed to its first 1,500 and last 2,500 characters), never for anything under

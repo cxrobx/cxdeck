@@ -31,6 +31,8 @@ step. Never merged into the waiting list. `src/on-you.ts`:
   `~/clients`** (state only). It also records Herdr panes now (`herdr_pane`); the
   plain-tab watcher must skip those, or every Herdr pane shows twice and its press fails.
 - QuickAsk chats come from QuickAsk's own ring (`still-on-you` in status.json), not re-judged.
+- T3 threads come from T3's own settled mark (`t3StillOnYou`): seen, latest run finished,
+  not settled. Unseen ones are on the waiting list instead, so a thread is never in both.
 - Key: press focuses the oldest, hold (≥600 ms) dismisses it until the session's next
   turn. Dial: rotate, press/tap focuses the one shown, long-touch dismisses it.
 

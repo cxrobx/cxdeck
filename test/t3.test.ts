@@ -6,7 +6,7 @@ import path from "node:path";
 import { DatabaseSync } from "node:sqlite";
 
 import { openDb, readThreads, threadLink, T3Watcher } from "../src/t3.ts";
-import { orderWaiting, quickAskWaiting, t3Waiting, type T3Thread } from "../src/waiting.ts";
+import { orderWaiting, quickAskWaiting, t3StillOnYou, t3Waiting, type T3Thread } from "../src/waiting.ts";
 
 const NOW = Date.parse("2026-11-06T12:00:00Z");
 const th = (id: string, over: Partial<T3Thread> = {}): T3Thread => ({
@@ -60,6 +60,28 @@ test("merges with the other sources by the usual order", () => {
 		...quickAskWaiting([{ id: "q", title: "q", state: "answered", since: "2026-11-06T10:30:00Z" }], true),
 	]);
 	assert.deepEqual(merged.map((i) => i.key), ["t3:t-blocked", "quickask:q", "t3:t-done"]);
+});
+
+test("on you: seen and unsettled; never unseen, settled, running, blocked, snoozed or subagent", () => {
+	const seen = { last_visited: "2026-11-06T11:30:00Z" };
+	const items = t3StillOnYou([
+		th("open", seen),
+		th("failed", { ...seen, run_status: "failed" }),
+		th("resettled", { ...seen, settled_at: "2026-11-06T10:30:00Z" }),
+		th("unseen"),
+		th("settled", { ...seen, settled_at: "2026-11-06T11:00:00Z" }),
+		th("running", { ...seen, run_status: "running", completed_at: null }),
+		th("blocked", { ...seen, pending_since: "2026-11-06T11:40:00Z" }),
+		th("snoozed", { ...seen, snoozed_until: "2026-11-07T00:00:00Z" }),
+		th("sub", { ...seen, relation: "subagent" }),
+		th("interrupted", { ...seen, run_status: "interrupted" }),
+	], NOW);
+	assert.deepEqual(items.map((i) => i.id), ["t3:open", "t3:failed", "t3:resettled"]);
+	assert.deepEqual(items[0], { key: "t3:open", id: "t3:open", title: "thread open", repo: "T3 · Home", since: "2026-11-06T11:00:00Z" });
+	// An unseen thread is on the waiting list, a seen one on "On you": never both.
+	const all = [th("a"), th("b", seen)];
+	const waiting = new Set(t3Waiting(all, true, NOW).map((i) => i.key));
+	assert.ok(t3StillOnYou(all, NOW).every((i) => !waiting.has(i.key)));
 });
 
 test("thread link: environment and thread id, ':' kept literal", () => {

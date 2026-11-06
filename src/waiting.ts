@@ -157,6 +157,28 @@ export function t3Waiting(threads: T3Thread[], countDone: boolean, now = Date.no
 	return out;
 }
 
+/**
+ * T3 threads still on Chris for "On you": the latest run finished, he has seen it (an
+ * unseen one is on the waiting list instead), and the thread isn't settled in T3.
+ * Anything with a pending request is blocked on the waiting list; running ones aren't on him.
+ */
+export function t3StillOnYou(threads: T3Thread[], now = Date.now()): { key: string; id: string; title: string; repo: string; since: string }[] {
+	return threads
+		.filter((th) => {
+			const done = t(th.completed_at);
+			if (th.relation === "subagent" || t(th.snoozed_until) > now || th.pending_since) return false;
+			if (!done || (th.run_status !== "completed" && th.run_status !== "failed")) return false;
+			return t(th.last_visited) >= done && t(th.settled_at) < done;
+		})
+		.map((th) => ({
+			key: `t3:${th.thread_id}`,
+			id: `t3:${th.thread_id}`,
+			title: th.title.trim() || "T3 thread",
+			repo: th.project ? `T3 · ${th.project}` : "T3 Code",
+			since: th.completed_at!,
+		}));
+}
+
 /** Blocked before done; within each, the one waiting longest first. */
 export function orderWaiting(items: WaitingSession[]): WaitingSession[] {
 	const rank = (s: WaitingSession) => (s.status === "blocked" ? 0 : 1);

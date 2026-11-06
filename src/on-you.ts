@@ -7,7 +7,8 @@
  * once, by Claude Haiku through `claude -p` on his subscription: no third party sees the
  * text, and turns he answers straight away are never sent anywhere. The hook keeps no
  * text for anything under ~/clients, so those sessions are never judged. QuickAsk chats
- * come from QuickAsk itself (its "still on me" ring, state `still-on-you`).
+ * come from QuickAsk itself (its "still on me" ring, state `still-on-you`), and T3 Code
+ * threads from T3's own "unsettled" mark: neither is judged again here.
  *
  * Verdicts and dismissals are kept on disk per turn (`session:since`), so a restart never
  * re-asks, and a new turn starts clean.
@@ -120,9 +121,14 @@ export type Inputs = {
 	seen: (t: Turn) => boolean;
 	/** Display title and focus key for a turn, or null when its session can't be focused. */
 	describe: (t: Turn) => { key: string; title: string } | null;
-	/** QuickAsk chats carrying the "still on me" ring. */
-	quickAsk: { id: string; title: string; since: string }[];
+	/**
+	 * Items whose own app already says they are on Chris (QuickAsk's "still on me" ring,
+	 * unsettled T3 threads). `id:since` is the dismissal key, so a new turn shows again.
+	 */
+	ready: ReadyItem[];
 };
+
+export type ReadyItem = { key: string; id: string; title: string; repo: string; since: string };
 
 /** Emits "change" when the list of items changes. */
 export class OnYou extends EventEmitter {
@@ -156,7 +162,7 @@ export class OnYou extends EventEmitter {
 
 	refresh(now = Date.now()): void {
 		if (!this.#inputs) return;
-		const { turns, seen, describe, quickAsk } = this.#inputs();
+		const { turns, seen, describe, ready } = this.#inputs();
 		const dismissed = new Set(this.#store.dismissed);
 		const next: OnYouItem[] = [];
 		for (const t of turns) {
@@ -170,12 +176,12 @@ export class OnYou extends EventEmitter {
 			const d = describe(t);
 			if (verdict && !dismissed.has(turn) && d) next.push({ ...d, turn, repo: path.basename(t.cwd) || "Claude", since: Date.parse(t.since) || 0 });
 		}
-		for (const c of quickAsk) {
+		for (const c of ready) {
 			const turn = `${c.id}:${c.since}`;
-			if (!dismissed.has(turn)) next.push({ key: `quickask:${c.id}`, turn, title: c.title, repo: "QuickAsk", since: Date.parse(c.since) || 0 });
+			if (!dismissed.has(turn)) next.push({ key: c.key, turn, title: c.title, repo: c.repo, since: Date.parse(c.since) || 0 });
 		}
 		next.sort((a, b) => a.since - b.since || a.key.localeCompare(b.key));
-		this.#prune(turns, quickAsk);
+		this.#prune(turns, ready);
 		if (JSON.stringify(next) !== JSON.stringify(this.items)) {
 			this.items = next;
 			this.emit("change");
@@ -210,8 +216,8 @@ export class OnYou extends EventEmitter {
 	}
 
 	/** Forget turns whose session has moved on or ended. */
-	#prune(turns: Turn[], quickAsk: { id: string; since: string }[]): void {
-		const live = new Set([...turns.map(turnKey), ...quickAsk.map((c) => `${c.id}:${c.since}`)]);
+	#prune(turns: Turn[], ready: ReadyItem[]): void {
+		const live = new Set([...turns.map(turnKey), ...ready.map((c) => `${c.id}:${c.since}`)]);
 		const verdicts = Object.fromEntries(Object.entries(this.#store.verdicts).filter(([k]) => live.has(k)));
 		const dismissed = this.#store.dismissed.filter((k) => live.has(k));
 		if (Object.keys(verdicts).length !== Object.keys(this.#store.verdicts).length || dismissed.length !== this.#store.dismissed.length) {

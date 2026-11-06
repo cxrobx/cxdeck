@@ -10,7 +10,7 @@ import { HerdrWatcher } from "./herdr";
 import { OnYou, type Turn } from "./on-you";
 import { openQuickAskChat, QuickAskWatcher } from "./quickask";
 import { openT3Thread, T3Watcher } from "./t3";
-import { claudeTermWaiting, herdrWaiting, orderWaiting, quickAskWaiting, t3Waiting, type WaitingSession } from "./waiting";
+import { claudeTermWaiting, herdrWaiting, orderWaiting, quickAskWaiting, t3StillOnYou, t3Waiting, type WaitingSession } from "./waiting";
 
 export type GlobalSettings = {
 	/** Count "done" (finished a turn, unseen) as waiting. Default true. */
@@ -132,7 +132,10 @@ class Hub {
 				const a = agents.get(t.herdr_pane);
 				return a ? { key: `herdr:${a.pane_id}`, title: a.terminal_title_stripped?.trim() || a.agent || "Herdr agent" } : null;
 			},
-			quickAsk: this.quickAsk.chats.filter((c) => c.state === "still-on-you"),
+			ready: [
+				...this.quickAsk.chats.filter((c) => c.state === "still-on-you").map((c) => ({ key: `quickask:${c.id}`, id: c.id, title: c.title, repo: "QuickAsk", since: c.since })),
+				...t3StillOnYou(this.t3.threads),
+			],
 		};
 	}
 
