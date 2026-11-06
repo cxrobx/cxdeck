@@ -11,6 +11,7 @@ has the user-facing behaviour and the mechanics of each source; read it first.
 | Herdr panes | `~/.config/herdr/herdr.sock` (push via `events.subscribe` + 5 s poll) | `agent.focus`, then raise the Ghostty tab named `Herdr` |
 | QuickAsk chats | `~/Library/Application Support/QuickAsk/status.json` (written by `~/Projects/quickask` `StatusFeed.swift`) | `open quickask://chat/<id>` |
 | Claude Code in plain Ghostty tabs | `~/.local/state/cx-deck/claude/*.json`, written by `~/.claude/hooks/cx-deck-state.sh` | focus that tab (marker-title match) |
+| T3 Code threads | `~/.t3/userdata/statev2.sqlite`, read-only via `node:sqlite` (`src/t3.ts`): pending runtime request = blocked, latest run finished after `lastVisitedAt` = done | `open t3code://threads/<environment-id>/<thread-id>` |
 
 Each source merges in `src/hub.ts`; ordering and the blocked/done mapping are pure
 functions in `src/waiting.ts` (unit-tested).
@@ -35,6 +36,10 @@ step. Never merged into the waiting list. `src/on-you.ts`:
 
 ## Things that bite
 
+- **T3's database is T3's, not ours**: open it `readOnly` and never write. Its schema
+  belongs to an app in beta, so a T3 update can rename columns; the watcher then logs
+  `T3 read failed` and shows no T3 threads. Fix the query in `src/t3.ts`, not around it.
+  T3's Claude runs without a tty, so the cx-deck hook never records T3 sessions, by design.
 - **Developer mode is required**: run `npx streamdeck dev` once, or `streamdeck restart` is
   a silent no-op. A new action or a manifest rename shows only after restarting the
   Stream Deck app itself.

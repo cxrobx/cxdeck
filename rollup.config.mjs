@@ -13,6 +13,8 @@ const sdPlugin = "com.cx.herdr.sdPlugin";
  */
 const config = {
 	input: "src/plugin.ts",
+	// Newer than node-resolve's built-in list; Stream Deck's Node 24 provides it.
+	external: ["node:sqlite"],
 	output: {
 		file: `${sdPlugin}/bin/plugin.js`,
 		sourcemap: isWatching,

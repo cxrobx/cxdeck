@@ -28,7 +28,7 @@ export type QuickAskChat = {
 	since: string;
 };
 
-export type Source = "herdr" | "quickask" | "claude";
+export type Source = "herdr" | "quickask" | "claude" | "t3";
 
 export type WaitingSession = {
 	/** Unique across sources: "herdr:w1:p1", "quickask:<uuid>". */
@@ -99,6 +99,62 @@ export function claudeTermWaiting(sessions: TermWaiting[], countDone: boolean): 
 			since: Date.parse(s.since) || 0,
 			seq: 0,
 		}));
+}
+
+/** One T3 Code thread as read from its database (see T3Watcher). Times are ISO strings or null. */
+export type T3Thread = {
+	thread_id: string;
+	title: string;
+	/** The project's name in T3 ("Home", "Artist Advisory"). */
+	project: string | null;
+	/** T3's own "seen" mark, moved whenever the thread is open in a T3 window. */
+	last_visited: string | null;
+	settled_at: string | null;
+	snoozed_until: string | null;
+	/** "subagent" threads belong to a parent and never show on their own. */
+	relation: string | null;
+	/** The latest run's status and finish time. */
+	run_status: string | null;
+	completed_at: string | null;
+	/** Oldest unanswered approval or question, if any. */
+	pending_since: string | null;
+};
+
+const t = (iso: string | null | undefined) => (iso ? Date.parse(iso) || 0 : 0);
+
+/**
+ * T3 Code threads: an unanswered approval or question is blocked; a run that finished
+ * (or failed) after the thread was last open in T3 is done, unless the thread was
+ * settled since or is snoozed. Working, interrupted and cancelled runs never show.
+ */
+export function t3Waiting(threads: T3Thread[], countDone: boolean, now = Date.now()): WaitingSession[] {
+	const out: WaitingSession[] = [];
+	for (const th of threads) {
+		if (th.relation === "subagent" || t(th.snoozed_until) > now) continue;
+		let status: "blocked" | "done";
+		let since: number;
+		if (th.pending_since) {
+			status = "blocked";
+			since = t(th.pending_since);
+		} else {
+			const done = t(th.completed_at);
+			if (!countDone || !done || (th.run_status !== "completed" && th.run_status !== "failed")) continue;
+			if (done <= t(th.last_visited) || t(th.settled_at) >= done) continue;
+			status = "done";
+			since = done;
+		}
+		out.push({
+			key: `t3:${th.thread_id}`,
+			source: "t3",
+			id: th.thread_id,
+			status,
+			title: th.title.trim() || "T3 thread",
+			repo: th.project ? `T3 · ${th.project}` : "T3 Code",
+			since,
+			seq: 0,
+		});
+	}
+	return out;
 }
 
 /** Blocked before done; within each, the one waiting longest first. */

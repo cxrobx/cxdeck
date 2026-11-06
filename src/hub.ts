@@ -1,6 +1,6 @@
 /**
- * The one shared state every action renders from: the Herdr, QuickAsk and
- * plain-terminal Claude watchers, the plugin's global settings, and the focus routine.
+ * The one shared state every action renders from: the Herdr, QuickAsk,
+ * plain-terminal Claude and T3 Code watchers, the plugin's global settings, and the focus routine.
  */
 import streamDeck from "@elgato/streamdeck";
 
@@ -9,7 +9,8 @@ import { raiseHerdrWindow } from "./ghostty";
 import { HerdrWatcher } from "./herdr";
 import { OnYou, type Turn } from "./on-you";
 import { openQuickAskChat, QuickAskWatcher } from "./quickask";
-import { claudeTermWaiting, herdrWaiting, orderWaiting, quickAskWaiting, type WaitingSession } from "./waiting";
+import { openT3Thread, T3Watcher } from "./t3";
+import { claudeTermWaiting, herdrWaiting, orderWaiting, quickAskWaiting, t3Waiting, type WaitingSession } from "./waiting";
 
 export type GlobalSettings = {
 	/** Count "done" (finished a turn, unseen) as waiting. Default true. */
@@ -24,6 +25,7 @@ class Hub {
 	readonly herdr = new HerdrWatcher();
 	readonly quickAsk = new QuickAskWatcher();
 	readonly claudeTerm = new ClaudeTermWatcher();
+	readonly t3 = new T3Watcher();
 	readonly onYou = new OnYou();
 	settings: GlobalSettings = {};
 	#listeners = new Set<Listener>();
@@ -49,6 +51,7 @@ class Hub {
 			...herdrWaiting(this.herdr.state.agents, countDone, stamp),
 			...quickAskWaiting(this.quickAsk.chats, countDone),
 			...claudeTermWaiting(terms, countDone),
+			...t3Waiting(this.t3.threads, countDone, now),
 		];
 		for (const key of this.#firstSeen.keys()) if (!seen.has(key)) this.#firstSeen.delete(key);
 		return orderWaiting(items);
@@ -59,11 +62,14 @@ class Hub {
 		this.herdr.on("log", (m: string) => streamDeck.logger.warn(m));
 		this.quickAsk.on("change", () => this.#emit());
 		this.claudeTerm.on("change", () => this.#emit());
+		this.t3.on("change", () => this.#emit());
+		this.t3.on("log", (m: string) => streamDeck.logger.warn(m));
 		this.onYou.on("change", () => this.#emit());
 		this.onYou.on("log", (m: string) => streamDeck.logger.info(`on you: ${m}`));
 		this.herdr.start();
 		this.quickAsk.start();
 		this.claudeTerm.start();
+		this.t3.start();
 		// Re-judged on every source change; the OnYou tick covers the 10-minute wait.
 		this.subscribe(() => this.onYou.refresh());
 		this.onYou.start(() => this.#onYouInputs());
@@ -86,6 +92,13 @@ class Hub {
 		if (source === "claude") {
 			const ok = await this.claudeTerm.focus(id).catch(() => false);
 			streamDeck.logger.info(`focused Claude session ${id} in Ghostty: ${ok ? "ok" : "failed"}`);
+			return ok;
+		}
+		if (source === "t3") {
+			const ok = await openT3Thread(this.t3.environmentId(), id);
+			streamDeck.logger.info(`opened T3 thread ${id}: ${ok ? "ok" : "failed"}`);
+			// T3 marks the thread seen once it is open; re-read now rather than on the next poll.
+			setTimeout(() => this.t3.refresh(), 1500);
 			return ok;
 		}
 		if (source === "quickask") {

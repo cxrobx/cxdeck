@@ -1,7 +1,7 @@
 # CX Deck — Stream Deck plugin
 
-Shows which Herdr agent sessions, QuickAsk chats and Claude Code sessions in plain
-Ghostty tabs need you, and brings one forward on press. Also: Zen link keys that open a site in the right Zen container.
+Shows which Herdr agent sessions, QuickAsk chats, Claude Code sessions in plain
+Ghostty tabs and T3 Code threads need you, and brings one forward on press. Also: Zen link keys that open a site in the right Zen container.
 (Plugin UUID stays `com.cx.herdr` so placed keys keep working.)
 
 Source available under the [Business Source License 1.1](LICENSE): free for personal use and inside your own organisation. It converts to Apache 2.0 on 2030-10-26.
@@ -48,6 +48,17 @@ session seen, so it drops off; a blocked one stays until answered.
   can run at once (`ghostty -e …` starts a second), and AppleScript-by-name and JXA each
   reach a different one, so both are searched and the owning Ghostty is raised by pid.
   A done session clears once its tab has been in front.
+
+- **T3 Code**: reads T3's own database, `~/.t3/userdata/statev2.sqlite`, read-only every
+  2.5 s (one query, ~2 ms; T3 runs it in WAL mode, so reading never blocks T3). An
+  unanswered approval or question (`orchestration_v2_projection_runtime_requests`,
+  `status = 'pending'`) is blocked. A thread whose latest run completed or failed after
+  T3's `lastVisitedAt` for it is done, unless it was settled since, is snoozed, or is a
+  subagent thread. Archived threads, and threads untouched for 7 days, are skipped. Press
+  opens `t3code://threads/<environment-id>/<thread-id>` (environment id from
+  `~/.t3/userdata/environment-id`). That opens the thread in T3 and moves its
+  `lastVisitedAt`, so a done thread drops off. The T3 app must be running on this Mac, or
+  the link launches it. T3 sessions are not part of *On you* yet.
 
 - **On you**: the hook also keeps each session's last prompt and the last answer
   (trimmed to its first 1,500 and last 2,500 characters), never for anything under
