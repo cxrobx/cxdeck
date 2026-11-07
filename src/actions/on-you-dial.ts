@@ -1,16 +1,17 @@
-import { action, type DialAction, SingletonAction, type DialDownEvent, type DialRotateEvent, type TouchTapEvent, type WillAppearEvent, type WillDisappearEvent } from "@elgato/streamdeck";
+import streamDeck, { action, type DialAction, SingletonAction, type DialDownEvent, type DialRotateEvent, type TouchTapEvent, type WillAppearEvent, type WillDisappearEvent } from "@elgato/streamdeck";
 import type { JsonObject } from "@elgato/utils";
 
 import { hub } from "../hub";
 import { onYouStripImage } from "../render";
+import { keyClaims } from "../on-you-claims";
 import { rotate, settle } from "../spread";
 
 type Instance = { action: DialAction<JsonObject>; index: number; key?: string; image?: string };
 
 /**
  * Stream Deck +: rotate through "On you" sessions, press or tap to focus the shown one,
- * long-touch to dismiss it. With several of these dials, each shows a different session:
- * left to right they take the next free one, and rotating skips the ones the others show.
+ * long-touch to dismiss it. Each dial shows a session no other dial or On you key on the
+ * device shows: left to right they take the next free one, and rotating skips the rest.
  */
 @action({ UUID: "com.cx.herdr.onyoudial" })
 export class OnYouDial extends SingletonAction<JsonObject> {
@@ -18,7 +19,9 @@ export class OnYouDial extends SingletonAction<JsonObject> {
 
 	constructor() {
 		super();
-		hub.subscribe(() => void this.#renderAll());
+		const renderAll = () => void this.#renderAll().catch((e) => streamDeck.logger.error(`on-you dial render failed: ${(e as Error).stack}`));
+		hub.subscribe(renderAll);
+		keyClaims.subscribe(renderAll);
 	}
 
 	override onWillAppear(ev: WillAppearEvent<JsonObject>): void {
@@ -57,14 +60,17 @@ export class OnYouDial extends SingletonAction<JsonObject> {
 
 	async #press(id: string): Promise<void> {
 		const inst = this.#instances.get(id);
-		if (!inst) return;
-		if (!inst.key || !(await hub.focus(inst.key))) await inst.action.showAlert();
+		if (!inst) return void streamDeck.logger.warn(`on-you dial press: unknown dial ${id}`);
+		const ok = !!inst.key && (await hub.focus(inst.key));
+		streamDeck.logger.info(`on-you dial press: ${inst.key ?? "nothing shown"} → ${ok ? "ok" : "failed"}`);
+		if (!ok) await inst.action.showAlert();
 	}
 
-	/** Keys the other dials on the same device show. */
+	/** Sessions the On you keys and the other dials on the same device show. */
 	#takenBy(inst: Instance): Set<string> {
 		const device = inst.action.device.id;
-		return new Set([...this.#instances.values()].filter((o) => o !== inst && o.key && o.action.device.id === device).map((o) => o.key!));
+		const dials = [...this.#instances.values()].filter((o) => o !== inst && o.key && o.action.device.id === device).map((o) => o.key!);
+		return new Set([...keyClaims.get(device), ...dials]);
 	}
 
 	/** Left to right, so the leftmost dial keeps its session and the next one moves on. */
@@ -74,7 +80,7 @@ export class OnYouDial extends SingletonAction<JsonObject> {
 		);
 		const taken = new Map<string, Set<string>>();
 		for (const inst of ordered) {
-			const mine = taken.get(inst.action.device.id) ?? new Set<string>();
+			const mine = taken.get(inst.action.device.id) ?? new Set<string>(keyClaims.get(inst.action.device.id));
 			taken.set(inst.action.device.id, mine);
 			this.#place(inst, mine);
 			if (inst.key) mine.add(inst.key);

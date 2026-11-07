@@ -1,4 +1,4 @@
-import { action, type DialAction, SingletonAction, type DialDownEvent, type DialRotateEvent, type TouchTapEvent, type WillAppearEvent, type WillDisappearEvent } from "@elgato/streamdeck";
+import streamDeck, { action, type DialAction, SingletonAction, type DialDownEvent, type DialRotateEvent, type TouchTapEvent, type WillAppearEvent, type WillDisappearEvent } from "@elgato/streamdeck";
 import type { JsonObject } from "@elgato/utils";
 
 import { hub } from "../hub";
@@ -13,7 +13,7 @@ export class WaitingDial extends SingletonAction<JsonObject> {
 
 	constructor() {
 		super();
-		hub.subscribe(() => void this.#renderAll());
+		hub.subscribe(() => void this.#renderAll().catch((e) => streamDeck.logger.error(`waiting dial render failed: ${(e as Error).stack}`)));
 	}
 
 	override onWillAppear(ev: WillAppearEvent<JsonObject>): void {
@@ -46,8 +46,10 @@ export class WaitingDial extends SingletonAction<JsonObject> {
 
 	async #press(id: string): Promise<void> {
 		const inst = this.#instances.get(id);
-		if (!inst) return;
-		if (!inst.key || !(await hub.focus(inst.key))) await inst.action.showAlert();
+		if (!inst) return void streamDeck.logger.warn(`waiting dial press: unknown dial ${id}`);
+		const ok = !!inst.key && (await hub.focus(inst.key));
+		streamDeck.logger.info(`waiting dial press: ${inst.key ?? "nothing shown"} → ${ok ? "ok" : "failed"}`);
+		if (!ok) await inst.action.showAlert();
 	}
 
 	async #renderAll(): Promise<void> {

@@ -33,8 +33,11 @@ step. Never merged into the waiting list. `src/on-you.ts`:
 - QuickAsk chats come from QuickAsk's own ring (`still-on-you` in status.json), not re-judged.
 - T3 threads come from T3's own settled mark (`t3StillOnYou`): seen, latest run finished,
   not settled. Unseen ones are on the waiting list instead, so a thread is never in both.
-- Key: press focuses the oldest, hold (≥600 ms) dismisses it until the session's next
+- Key: press focuses the one shown, hold (≥600 ms) dismisses it until the session's next
   turn. Dial: rotate, press/tap focuses the one shown, long-touch dismisses it.
+- Several keys and dials on one device never repeat a session: keys place first (reading
+  order, `src/actions/on-you.ts`) and publish what they hold in `src/on-you-claims.ts`;
+  dials skip those and each other (`src/spread.ts`).
 
 ## Things that bite
 

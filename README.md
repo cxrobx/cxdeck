@@ -23,6 +23,9 @@ Source available under the [Business Source License 1.1](LICENSE): free for pers
   and the one that has waited longest; press focuses it, hold dismisses it.
 - **On you dial** (Stream Deck +) — the same list on a dial, modeled on the waiting
   dial: rotate through it, press or tap to focus, long-touch the strip to dismiss.
+- Several On you keys and dials on one deck never show the same session: keys take the
+  oldest ones in reading order, dials the next free ones left to right, and rotating
+  skips whatever another key or dial shows.
 
 "Waiting" = `blocked` (approval or question UI) first, then `done` (finished a turn,
 unseen; toggle with *Count done*), oldest first within each. Focusing marks a done
