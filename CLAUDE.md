@@ -67,6 +67,10 @@ step. Never merged into the waiting list. `src/on-you.ts`:
   comma-separated list entirely (it drew a default sans, not even the fallback), so
   `src/render.ts` names `JetBrains Mono` alone (QuickAsk's font, installed system-wide).
   Check a font change on the real deck, zoomed, not in Chrome: Chrome renders lists fine.
+- **Presses dead, plugin log silent = check the hardware first.** After the Mac wakes, the
+  Stream Deck + can wedge: `~/Library/Logs/ElgatoStreamDeck/StreamDeck.log` shows `Read FW
+  version: FAILED` / `device purged`, or every `Set…` command `FAILED`. Restarting the app
+  doesn't clear it; unplugging and replugging the deck does. No plugin change needed.
 - **Zen links never fall back to a plain open.** Daemon down, console host or no route =
   alert. A wrong container is an incident (wrong logins), not a degraded success.
 - Tests use placeholder domains and containers, never Chris's real routes or tabs
